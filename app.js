@@ -126,7 +126,6 @@ const days = {
 const stateKey = "ielts-ece-dashboard-v1";
 const supabaseUrl = "https://zwpfnjrvplsbvclwpjpm.supabase.co";
 const supabasePublishableKey = "sb_publishable_1FSvh4_PAvprErj4RUHNRQ_vdoPa2EU";
-const syncRedirectUrl = "https://randi-xxx.github.io/ielts-learning-dashboard/";
 const supabaseClient = window.supabase?.createClient(supabaseUrl, supabasePublishableKey) || null;
 const vocabulary = [
   ["day1", "experience", "n. /ɪkˈspɪəriəns/", "经验；经历", "work experience / gain experience"],
@@ -189,11 +188,15 @@ function setSyncStatus(message, type = "") {
 
 function updateSyncInterface() {
   const emailInput = document.getElementById("sync-email");
+  const passwordInput = document.getElementById("sync-password");
   const submitButton = document.querySelector("#sync-form button[type='submit']");
+  const registerButton = document.getElementById("sync-register");
   const logoutButton = document.getElementById("sync-logout");
   const isLoggedIn = Boolean(currentUser);
   emailInput.hidden = isLoggedIn;
+  passwordInput.hidden = isLoggedIn;
   submitButton.hidden = isLoggedIn;
+  registerButton.hidden = isLoggedIn;
   logoutButton.hidden = !isLoggedIn;
   if (isLoggedIn) setSyncStatus("已登录：学习进度与复盘笔记会自动同步。", "synced");
 }
@@ -426,20 +429,42 @@ document.getElementById("sync-form").addEventListener("submit", async event => {
   event.preventDefault();
   if (!supabaseClient) return;
   const email = document.getElementById("sync-email").value.trim();
+  const password = document.getElementById("sync-password").value;
   const submitButton = document.querySelector("#sync-form button[type='submit']");
-  if (!email) return;
+  if (!email || password.length < 8) return;
   submitButton.disabled = true;
-  setSyncStatus("正在发送登录链接…");
-  const { error } = await supabaseClient.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: syncRedirectUrl }
-  });
+  setSyncStatus("正在登录并读取云端学习记录…");
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
   submitButton.disabled = false;
   if (error) {
-    setSyncStatus("登录链接发送失败，请检查邮箱后重试。", "error");
+    setSyncStatus("登录失败，请检查邮箱或密码。", "error");
     return;
   }
-  setSyncStatus("登录链接已发送，请在邮箱中打开链接后返回本网站。", "synced");
+  setSyncStatus("登录成功，正在同步你的学习记录…", "synced");
+});
+
+document.getElementById("sync-register").addEventListener("click", async () => {
+  if (!supabaseClient) return;
+  const email = document.getElementById("sync-email").value.trim();
+  const password = document.getElementById("sync-password").value;
+  const registerButton = document.getElementById("sync-register");
+  if (!email || password.length < 8) {
+    setSyncStatus("请填写有效邮箱，并设置至少 8 位的密码。", "error");
+    return;
+  }
+  registerButton.disabled = true;
+  setSyncStatus("正在创建同步账号…");
+  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  registerButton.disabled = false;
+  if (error) {
+    setSyncStatus("注册失败：该邮箱可能已注册，或密码不符合要求。", "error");
+    return;
+  }
+  if (data.session) {
+    setSyncStatus("注册成功，正在同步你的学习记录…", "synced");
+    return;
+  }
+  setSyncStatus("账号已创建，请使用邮箱和密码登录。", "synced");
 });
 
 document.getElementById("sync-logout").addEventListener("click", async () => {

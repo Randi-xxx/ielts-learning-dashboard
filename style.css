@@ -40,7 +40,7 @@ h3 { margin-bottom: 6px; font-size: 1.05rem; }
 .sync-status.is-synced { color: var(--teal); font-weight: 700; }
 .sync-status.is-error { color: #a64d32; }
 .sync-form { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; align-items: center; }
-.sync-form input { height: 38px; width: 224px; border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; background: var(--surface); color: var(--ink); }
+.sync-form input { height: 38px; width: 154px; border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; background: var(--surface); color: var(--ink); }
 .sync-form input:focus { outline: 3px solid rgba(52, 88, 211, .2); border-color: var(--primary); }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
