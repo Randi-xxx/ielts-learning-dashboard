@@ -34,6 +34,15 @@ h1 { max-width: 780px; margin-bottom: 0; font-size: clamp(1.85rem, 4vw, 3rem); l
 h2 { margin-bottom: 4px; font-size: clamp(1.35rem, 2.5vw, 1.9rem); letter-spacing: -.02em; }
 h3 { margin-bottom: 6px; font-size: 1.05rem; }
 .hero-copy { margin-bottom: 0; color: var(--muted); }
+.sync-card { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-bottom: 18px; padding: 13px 16px; border: 1px solid #d9e3ff; border-radius: 14px; background: rgba(255,255,255,.76); box-shadow: 0 8px 24px rgba(40, 58, 94, .06); }
+.sync-card .card-label { margin-bottom: 3px; }
+.sync-status { margin: 0; color: var(--muted); font-size: .9rem; }
+.sync-status.is-synced { color: var(--teal); font-weight: 700; }
+.sync-status.is-error { color: #a64d32; }
+.sync-form { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; align-items: center; }
+.sync-form input { height: 38px; width: 224px; border: 1px solid var(--line); border-radius: 9px; padding: 7px 10px; background: var(--surface); color: var(--ink); }
+.sync-form input:focus { outline: 3px solid rgba(52, 88, 211, .2); border-color: var(--primary); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 .calendar-card { padding: 14px 16px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
 .calendar-card-heading { margin-bottom: 6px; }
@@ -165,6 +174,9 @@ textarea:focus, select:focus { outline: 3px solid rgba(52, 88, 211, .2); border-
 @media (max-width: 760px) {
   .app-shell { width: min(100% - 22px, 1120px); padding-top: 28px; }
   .hero, .section-heading { align-items: stretch; flex-direction: column; }
+  .sync-card { align-items: stretch; flex-direction: column; }
+  .sync-form { justify-content: flex-start; }
+  .sync-form input { width: min(100%, 280px); }
   .top-grid, .notes-grid, .word-grid { grid-template-columns: 1fr; }
   .summary-stack { grid-template-rows: none; min-height: auto; }
   .calendar-card { width: 100%; }

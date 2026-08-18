@@ -14,6 +14,19 @@
         </div>
       </header>
 
+      <section class="sync-card" aria-label="跨设备学习数据同步">
+        <div>
+          <p class="card-label">跨设备同步</p>
+          <p id="sync-status" class="sync-status" aria-live="polite">未登录：当前进度仅保存在这台电脑。</p>
+        </div>
+        <form id="sync-form" class="sync-form">
+          <label class="sr-only" for="sync-email">邮箱</label>
+          <input id="sync-email" type="email" autocomplete="email" placeholder="输入邮箱后发送登录链接" required />
+          <button class="secondary-button" type="submit">登录并同步</button>
+          <button id="sync-logout" class="text-button" type="button" hidden>退出同步</button>
+        </form>
+      </section>
+
       <section class="top-grid" aria-label="今日概况">
         <div class="summary-stack">
           <article class="progress-card">
@@ -130,6 +143,7 @@
         </div>
       </section>
     </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
   </body>
 </html>

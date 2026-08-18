@@ -124,6 +124,10 @@ const days = {
 };
 
 const stateKey = "ielts-ece-dashboard-v1";
+const supabaseUrl = "https://zwpfnjrvplsbvclwpjpm.supabase.co";
+const supabasePublishableKey = "sb_publishable_1FSvh4_PAvprErj4RUHNRQ_vdoPa2EU";
+const syncRedirectUrl = "https://randi-xxx.github.io/ielts-learning-dashboard/";
+const supabaseClient = window.supabase?.createClient(supabaseUrl, supabasePublishableKey) || null;
 const vocabulary = [
   ["day1", "experience", "n. /ɪkˈspɪəriəns/", "经验；经历", "work experience / gain experience"],
   ["day1", "skill", "n. /skɪl/", "技能；能力", "technical skills / communication skills"],
@@ -169,13 +173,91 @@ const vocabulary = [
 let state = JSON.parse(localStorage.getItem(stateKey) || "{}");
 let currentDay = state.currentDay || "day2";
 let calendarDate = new Date(2026, 7, 18);
+let currentUser = null;
+let syncTimer = null;
 
 const taskList = document.getElementById("task-list");
 const progressNumber = document.getElementById("progress-number");
 const progressBar = document.getElementById("progress-bar");
 const progressCaption = document.getElementById("progress-caption");
 
-function saveState() { localStorage.setItem(stateKey, JSON.stringify(state)); }
+function setSyncStatus(message, type = "") {
+  const status = document.getElementById("sync-status");
+  status.textContent = message;
+  status.className = `sync-status${type ? ` is-${type}` : ""}`;
+}
+
+function updateSyncInterface() {
+  const emailInput = document.getElementById("sync-email");
+  const submitButton = document.querySelector("#sync-form button[type='submit']");
+  const logoutButton = document.getElementById("sync-logout");
+  const isLoggedIn = Boolean(currentUser);
+  emailInput.hidden = isLoggedIn;
+  submitButton.hidden = isLoggedIn;
+  logoutButton.hidden = !isLoggedIn;
+  if (isLoggedIn) setSyncStatus("已登录：学习进度与复盘笔记会自动同步。", "synced");
+}
+
+function saveState() {
+  localStorage.setItem(stateKey, JSON.stringify(state));
+  if (!currentUser || !supabaseClient) return;
+  window.clearTimeout(syncTimer);
+  syncTimer = window.setTimeout(saveCloudState, 500);
+}
+
+async function saveCloudState() {
+  if (!currentUser || !supabaseClient) return;
+  setSyncStatus("正在保存云端学习记录…");
+  const { error } = await supabaseClient.from("study_state").upsert({
+    user_id: currentUser.id,
+    state,
+    updated_at: new Date().toISOString()
+  }, { onConflict: "user_id" });
+  if (error) {
+    setSyncStatus("云端保存失败，本机内容仍已保留。", "error");
+    return;
+  }
+  setSyncStatus("已同步：学习进度与复盘笔记已保存到云端。", "synced");
+}
+
+async function loadCloudState() {
+  if (!currentUser || !supabaseClient) return;
+  setSyncStatus("正在读取你的云端学习记录…");
+  const { data, error } = await supabaseClient.from("study_state").select("state").eq("user_id", currentUser.id).maybeSingle();
+  if (error) {
+    setSyncStatus("云端读取失败，暂时使用本机学习记录。", "error");
+    return;
+  }
+  if (data?.state && typeof data.state === "object") {
+    state = data.state;
+    currentDay = state.currentDay || "day2";
+    localStorage.setItem(stateKey, JSON.stringify(state));
+    renderDay();
+    setSyncStatus("已同步：已加载你的云端学习记录。", "synced");
+    return;
+  }
+  await saveCloudState();
+  setSyncStatus("已同步：已建立你的第一份云端学习记录。", "synced");
+}
+
+async function setCurrentUser(user) {
+  currentUser = user || null;
+  updateSyncInterface();
+  if (currentUser) await loadCloudState();
+  else setSyncStatus("未登录：当前进度仅保存在这台电脑。");
+}
+
+async function initializeSync() {
+  if (!supabaseClient) {
+    setSyncStatus("同步服务未加载，当前进度仅保存在这台电脑。", "error");
+    return;
+  }
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  await setCurrentUser(session?.user);
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    window.setTimeout(() => setCurrentUser(session?.user), 0);
+  });
+}
 function dayState() { return state[currentDay] || { tasks: {}, notes: {} }; }
 
 function progressForDay(key) {
@@ -340,6 +422,31 @@ document.getElementById("save-notes").addEventListener("click", () => {
   document.getElementById("save-message").textContent = "已保存到当前浏览器。";
 });
 
+document.getElementById("sync-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  if (!supabaseClient) return;
+  const email = document.getElementById("sync-email").value.trim();
+  const submitButton = document.querySelector("#sync-form button[type='submit']");
+  if (!email) return;
+  submitButton.disabled = true;
+  setSyncStatus("正在发送登录链接…");
+  const { error } = await supabaseClient.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: syncRedirectUrl }
+  });
+  submitButton.disabled = false;
+  if (error) {
+    setSyncStatus("登录链接发送失败，请检查邮箱后重试。", "error");
+    return;
+  }
+  setSyncStatus("登录链接已发送，请在邮箱中打开链接后返回本网站。", "synced");
+});
+
+document.getElementById("sync-logout").addEventListener("click", async () => {
+  if (!supabaseClient) return;
+  await supabaseClient.auth.signOut();
+});
+
 document.getElementById("vocabulary-search").addEventListener("input", renderVocabulary);
 document.getElementById("vocabulary-day-filter").addEventListener("change", renderVocabulary);
 document.getElementById("random-vocabulary").addEventListener("click", pickRandomVocabulary);
@@ -347,3 +454,4 @@ document.getElementById("show-quiz-answer").addEventListener("click", revealQuiz
 
 renderDay();
 renderVocabulary();
+initializeSync();
