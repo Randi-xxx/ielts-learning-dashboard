@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>雅思 7 分 · NZTC GD 学习工作台</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <div>
+          <h1>DAILY LEARNING DASHBOARD</h1>
+        </div>
+      </header>
+
+      <section class="top-grid" aria-label="今日概况">
+        <div class="summary-stack">
+          <article class="progress-card">
+            <p class="card-label">今日完成率</p>
+            <p class="progress-number"><span id="progress-number">0</span><small>%</small></p>
+            <div class="progress-track" role="progressbar" aria-label="今日完成率" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <span id="progress-bar"></span>
+            </div>
+            <p id="progress-caption" class="muted">完成 0 / 0 项</p>
+          </article>
+          <article class="goal-card">
+            <p class="card-label">今日配比</p>
+            <p class="goal-title">IELTS 75% · NZTC 25%</p>
+          </article>
+        </div>
+        <article class="calendar-card" aria-label="学习日历">
+          <div class="calendar-card-heading"><p class="card-label">学习轨迹</p></div>
+          <div class="calendar-header">
+            <button id="calendar-previous" class="calendar-nav" type="button" aria-label="上一个月">‹</button>
+            <strong id="calendar-month"></strong>
+            <button id="calendar-next" class="calendar-nav" type="button" aria-label="下一个月">›</button>
+          </div>
+          <div class="calendar-weekdays" aria-hidden="true"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+          <div id="calendar-grid" class="calendar-grid"></div>
+          <div class="calendar-legend"><span><i class="legend-dot complete"></i>全部完成</span><span><i class="legend-dot partial"></i>已学习</span><span><i class="legend-dot empty"></i>未学习</span></div>
+        </article>
+      </section>
+
+      <nav class="module-nav" aria-label="内容导航">
+        <button class="nav-chip is-active" data-target="plan">学习总览</button>
+        <button class="nav-chip" data-target="review">昨日复习</button>
+        <button class="nav-chip" data-target="english">雅思英语</button>
+        <button class="nav-chip" data-target="ece">NZTC GD 适应</button>
+        <button class="nav-chip" data-target="reflection">复盘笔记</button>
+        <button class="nav-chip" data-target="vocabulary">词汇复习</button>
+      </nav>
+
+      <section id="plan" class="content-section is-visible">
+        <div class="section-heading">
+          <div>
+            <p class="section-kicker">TODAY'S PLAN</p>
+            <h2 id="day-title"></h2>
+            <p id="day-theme" class="muted"></p>
+          </div>
+          <span id="time-badge" class="time-badge"></span>
+        </div>
+        <div id="task-list" class="task-list"></div>
+      </section>
+
+      <section id="review" class="content-section">
+        <div class="section-heading">
+          <h2>REVIEW FIRST</h2>
+        </div>
+        <div id="review-content" class="study-card prose-card"></div>
+      </section>
+
+      <section id="english" class="content-section">
+        <div class="section-heading">
+          <h2>ACADEMIC IELTS</h2>
+        </div>
+        <div id="english-content"></div>
+      </section>
+
+      <section id="ece" class="content-section">
+        <div class="section-heading">
+          <h2>NZTC GD READINESS</h2>
+        </div>
+        <div id="ece-content" class="study-card prose-card"></div>
+      </section>
+
+      <section id="reflection" class="content-section">
+        <div class="section-heading">
+          <h2>REFLECTION</h2>
+        </div>
+        <div class="notes-grid">
+          <label>今天最难的内容<textarea id="note-difficult" placeholder="例如：阅读判断题总是分不清 False 和 Not Given"></textarea></label>
+          <label>今日新收获<textarea id="note-learning" placeholder="例如：because 后面接完整句子，because of 后面接名词短语"></textarea></label>
+          <label>明天的调整<textarea id="note-adjustment" placeholder="例如：增加 10 分钟听力精听"></textarea></label>
+        </div>
+        <button id="save-notes" class="primary-button">保存今日笔记</button>
+        <p id="save-message" class="save-message" aria-live="polite"></p>
+      </section>
+
+      <section id="vocabulary" class="content-section">
+        <div class="section-heading">
+          <h2>VOCABULARY REVIEW</h2>
+        </div>
+        <div class="study-card vocabulary-review-card">
+          <div class="vocabulary-toolbar">
+            <div>
+              <p class="card-label">已学英语词汇</p>
+              <p id="vocabulary-stat" class="vocabulary-stat" aria-live="polite"></p>
+            </div>
+            <div class="vocabulary-filters">
+              <label>查找单词<input id="vocabulary-search" type="search" placeholder="英文、中文或搭配" /></label>
+              <label>学习日<select id="vocabulary-day-filter"><option value="all">全部学习日</option><option value="day1">Day 1</option><option value="day2">Day 2</option></select></label>
+              <button id="random-vocabulary" class="secondary-button" type="button">随机抽查</button>
+            </div>
+          </div>
+
+          <div class="vocabulary-quiz" aria-live="polite">
+            <p class="card-label">随机抽查</p>
+            <p id="quiz-prompt" class="quiz-prompt">点击“随机抽查”，先看英文并尝试说出中文、词性和一个搭配。</p>
+            <button id="show-quiz-answer" class="text-button" type="button" hidden>查看答案</button>
+            <p id="quiz-answer" class="quiz-answer" hidden></p>
+          </div>
+
+          <div class="vocabulary-table-wrap">
+            <table class="vocabulary-table">
+              <thead><tr><th>学习日</th><th>单词</th><th>词性与发音</th><th>中文</th><th>常用搭配</th></tr></thead>
+              <tbody id="vocabulary-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
