@@ -505,6 +505,13 @@ function renderNotes() {
 
 let activeQuizWord = null;
 
+function vocabularyReviewRecord(word) {
+  state.vocabularyReview = state.vocabularyReview || {};
+  const key = word.toLowerCase();
+  state.vocabularyReview[key] = state.vocabularyReview[key] || { correct: 0, wrong: 0 };
+  return state.vocabularyReview[key];
+}
+
 function vocabularyDayLabel(dayKey) {
   const match = /^day(\d+)$/.exec(dayKey);
   return match ? `Day ${match[1]}` : dayKey;
@@ -535,18 +542,31 @@ function pickRandomVocabulary() {
   const prompt = document.getElementById("quiz-prompt");
   const answer = document.getElementById("quiz-answer");
   const revealButton = document.getElementById("show-quiz-answer");
+  const rating = document.getElementById("quiz-rating");
   if (!words.length) {
     activeQuizWord = null;
     prompt.textContent = "当前筛选条件下没有可抽查的单词。";
     answer.hidden = true;
     revealButton.hidden = true;
+    rating.hidden = true;
     return;
   }
-  activeQuizWord = words[Math.floor(Math.random() * words.length)];
+  const weightedWords = words.map(item => {
+    const record = vocabularyReviewRecord(item[1]);
+    return { item, weight: Math.max(0.2, 1 + (record.wrong * 1.35) - (record.correct * 0.22)) };
+  });
+  const totalWeight = weightedWords.reduce((sum, entry) => sum + entry.weight, 0);
+  let target = Math.random() * totalWeight;
+  activeQuizWord = weightedWords[weightedWords.length - 1].item;
+  for (const entry of weightedWords) {
+    target -= entry.weight;
+    if (target <= 0) { activeQuizWord = entry.item; break; }
+  }
   const [day, word] = activeQuizWord;
   prompt.innerHTML = `请回忆：<strong>${word}</strong>（${vocabularyDayLabel(day)}）<br><span>先说出中文、词性，再说一个常用搭配。</span>`;
   answer.hidden = true;
   revealButton.hidden = false;
+  rating.hidden = false;
 }
 
 function revealQuizAnswer() {
@@ -555,6 +575,71 @@ function revealQuizAnswer() {
   const answer = document.getElementById("quiz-answer");
   answer.innerHTML = `<strong>${word}</strong> · ${pronunciation}<br>中文：${meaning}<br>搭配：${collocation}`;
   answer.hidden = false;
+}
+
+function rateQuizWord(isKnown) {
+  if (!activeQuizWord) return;
+  const record = vocabularyReviewRecord(activeQuizWord[1]);
+  if (isKnown) record.correct += 1;
+  else record.wrong += 1;
+  record.updatedAt = new Date().toISOString();
+  saveState();
+  renderMistakeBook();
+  pickRandomVocabulary();
+}
+
+function renderMistakeBook() {
+  const body = document.getElementById("mistake-book-body");
+  const uniqueWords = new Map(vocabulary.map(item => [item[1].toLowerCase(), item]));
+  const mistakes = Object.entries(state.vocabularyReview || {})
+    .filter(([, record]) => (record.wrong || 0) >= 3)
+    .map(([key, record]) => ({ item: uniqueWords.get(key), record }))
+    .filter(entry => entry.item)
+    .sort((a, b) => (b.record.wrong - a.record.wrong) || (a.record.correct - b.record.correct) || a.item[1].localeCompare(b.item[1]));
+  body.innerHTML = mistakes.length ? mistakes.map(({ item, record }, index) => `<tr><td>${index + 1}</td><td class="vocabulary-word">${item[1]}</td><td><span class="mistake-count">${record.wrong}</span></td><td>${record.correct || 0}</td><td>${item[3]}</td><td>${item[4]}</td></tr>`).join("") : '<tr><td class="vocabulary-empty" colspan="6">目前没有错误 3 次以上的单词，继续保持。</td></tr>';
+}
+
+function renderRootFamilyOptions() {
+  const select = document.getElementById("root-family-select");
+  const families = window.vocabularyRootFamilies || [];
+  select.innerHTML = families.map((family, index) => `<option value="${index}">${family.root} · ${family.meaning}（${family.words.length} 词）</option>`).join("");
+  renderRootMap();
+}
+
+function renderRootMap() {
+  const families = window.vocabularyRootFamilies || [];
+  const family = families[Number(document.getElementById("root-family-select").value) || 0];
+  const map = document.getElementById("root-map");
+  if (!family) { map.innerHTML = '<p class="vocabulary-empty">暂无词根数据。</p>'; return; }
+  const centre = { x: 400, y: 260 };
+  const radius = family.words.length === 1 ? 180 : 195;
+  const nodes = family.words.map((word, index) => {
+    const angle = family.words.length === 1 ? 0 : ((Math.PI * 2 * index) / family.words.length) - (Math.PI / 2);
+    return { word, x: centre.x + Math.cos(angle) * radius, y: centre.y + Math.sin(angle) * radius };
+  });
+  const lines = nodes.map(node => `<line x1="${centre.x}" y1="${centre.y}" x2="${node.x}" y2="${node.y}"></line>`).join("");
+  const wordButtons = nodes.map((node, index) => `<button class="root-word-node" type="button" data-root-word="${index}" style="left:${node.x / 8}%;top:${node.y / 5.2}%">${node.word.word}</button>`).join("");
+  map.innerHTML = `<div class="root-topology"><svg viewBox="0 0 800 520" preserveAspectRatio="none" aria-hidden="true">${lines}</svg><button class="root-centre-node" type="button" data-root-centre>${family.root}</button>${wordButtons}<div id="root-popover" class="root-popover" hidden></div></div>`;
+  map.querySelector("[data-root-centre]").addEventListener("click", () => showRootPopover(`<strong>${family.root}</strong><span>来源：${family.source}</span><span>核心含义：${family.meaning}</span>`));
+  map.querySelectorAll("[data-root-word]").forEach(button => button.addEventListener("click", () => {
+    const word = family.words[Number(button.dataset.rootWord)];
+    showRootPopover(`<strong>${word.word}</strong><span>中心词根：${family.root}（${family.meaning}）</span><span>构词提示：${word.parts}</span><span>单词含义：${word.meaning}</span>`);
+  }));
+}
+
+function showRootPopover(content) {
+  const popover = document.getElementById("root-popover");
+  popover.innerHTML = `${content}<button type="button" aria-label="关闭词源说明">×</button>`;
+  popover.hidden = false;
+  popover.querySelector("button").addEventListener("click", () => { popover.hidden = true; });
+}
+
+function showVocabularyView(view) {
+  document.getElementById("vocabulary-main-view").hidden = view !== "main";
+  document.getElementById("vocabulary-mistake-view").hidden = view !== "mistakes";
+  document.getElementById("vocabulary-root-view").hidden = view !== "roots";
+  if (view === "mistakes") renderMistakeBook();
+  if (view === "roots") renderRootMap();
 }
 
 function renderDay() {
@@ -662,9 +747,17 @@ document.getElementById("vocabulary-search").addEventListener("input", renderVoc
 document.getElementById("vocabulary-day-filter").addEventListener("change", renderVocabulary);
 document.getElementById("random-vocabulary").addEventListener("click", pickRandomVocabulary);
 document.getElementById("show-quiz-answer").addEventListener("click", revealQuizAnswer);
+document.getElementById("quiz-known").addEventListener("click", () => rateQuizWord(true));
+document.getElementById("quiz-unknown").addEventListener("click", () => rateQuizWord(false));
+document.getElementById("vocabulary-mistakes").addEventListener("click", () => showVocabularyView("mistakes"));
+document.getElementById("vocabulary-roots").addEventListener("click", () => showVocabularyView("roots"));
+document.querySelectorAll(".vocabulary-back").forEach(button => button.addEventListener("click", () => showVocabularyView("main")));
+document.getElementById("root-family-select").addEventListener("change", renderRootMap);
 
 renderDay();
 renderVocabulary();
+renderMistakeBook();
+renderRootFamilyOptions();
 const rememberedEmail = localStorage.getItem(rememberedEmailKey);
 if (rememberedEmail) {
   document.getElementById("sync-email").value = rememberedEmail;

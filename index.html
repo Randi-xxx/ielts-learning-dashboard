@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>IELTS + NZTC LEARNING DASHBOARD</title>
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=20260819-2" />
   </head>
   <body>
     <main class="app-shell">
@@ -126,29 +126,30 @@
               <p id="vocabulary-stat" class="vocabulary-stat" aria-live="polite"></p>
             </div>
             <div class="vocabulary-filters">
+              <div class="vocabulary-view-buttons" aria-label="词汇复习功能">
+                <button id="vocabulary-mistakes" class="secondary-button" type="button">错题本</button>
+                <button id="vocabulary-roots" class="secondary-button" type="button">词根词缀</button>
+              </div>
               <label>查找单词<input id="vocabulary-search" type="search" placeholder="英文、中文或搭配" /></label>
               <label>学习日<select id="vocabulary-day-filter"><option value="all">全部学习日</option><option value="day1">Day 1</option><option value="day2">Day 2</option><option value="day3">Day 3</option></select></label>
               <button id="random-vocabulary" class="secondary-button" type="button">随机抽查</button>
             </div>
           </div>
 
-          <div class="vocabulary-quiz" aria-live="polite">
-            <p class="card-label">随机抽查</p>
-            <p id="quiz-prompt" class="quiz-prompt">点击“随机抽查”，先看英文并尝试说出中文、词性和一个搭配。</p>
-            <button id="show-quiz-answer" class="text-button" type="button" hidden>查看答案</button>
-            <p id="quiz-answer" class="quiz-answer" hidden></p>
+          <div id="vocabulary-main-view" class="vocabulary-view">
+            <div class="vocabulary-quiz" aria-live="polite">
+              <div class="quiz-content"><p class="card-label">随机抽查</p><p id="quiz-prompt" class="quiz-prompt">点击“随机抽查”，先看英文并尝试说出中文、词性和一个搭配。</p><button id="show-quiz-answer" class="text-button" type="button" hidden>查看答案</button><p id="quiz-answer" class="quiz-answer" hidden></p></div>
+              <div id="quiz-rating" class="quiz-rating" hidden aria-label="掌握情况"><button id="quiz-known" class="quiz-rating-button is-known" type="button" aria-label="这个单词我会">√</button><button id="quiz-unknown" class="quiz-rating-button is-unknown" type="button" aria-label="这个单词我不会">×</button></div>
+            </div>
+            <div class="vocabulary-table-wrap"><table class="vocabulary-table"><thead><tr><th>学习日</th><th>单词</th><th>词性与发音</th><th>中文</th><th>常用搭配</th></tr></thead><tbody id="vocabulary-body"></tbody></table></div>
           </div>
-
-          <div class="vocabulary-table-wrap">
-            <table class="vocabulary-table">
-              <thead><tr><th>学习日</th><th>单词</th><th>词性与发音</th><th>中文</th><th>常用搭配</th></tr></thead>
-              <tbody id="vocabulary-body"></tbody>
-            </table>
-          </div>
+          <div id="vocabulary-mistake-view" class="vocabulary-view" hidden><div class="vocabulary-subview-heading"><div><p class="card-label">错题本</p><p class="vocabulary-stat">只收录累计答错 3 次及以上的单词，并按错误次数由高到低排列。</p></div><button class="text-button vocabulary-back" type="button">返回词汇表</button></div><div class="vocabulary-table-wrap"><table class="vocabulary-table"><thead><tr><th>排名</th><th>单词</th><th>错误次数</th><th>正确次数</th><th>中文</th><th>常用搭配</th></tr></thead><tbody id="mistake-book-body"></tbody></table></div></div>
+          <div id="vocabulary-root-view" class="vocabulary-view" hidden><div class="vocabulary-subview-heading"><div><p class="card-label">词根词缀</p><p class="vocabulary-stat">选择词根查看已学单词的放射状词族图；点击中心词根或外侧单词查看构词说明。</p></div><button class="text-button vocabulary-back" type="button">返回词汇表</button></div><div class="root-controls"><label>选择词根<select id="root-family-select"></select></label><span>词源用于辅助记忆，不代表现代英语中所有单词都能机械拆分。</span></div><div id="root-map" class="root-map" aria-live="polite"></div></div>
         </div>
       </section>
     </main>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="root-data.js"></script>
   <script src="app.js"></script>
   <script src="day3.js"></script>
   </body>
