@@ -337,6 +337,8 @@ const vocabulary = [
   ["day3", "reduce", "v. /rɪˈdjuːs/", "减少", "reduce emissions"],
   ["day3", "investment", "n. /ɪnˈvestmənt/", "投资", "public investment"]
 ];
+// 后续学习日通过 days4-9.js 向同一数组追加词项；随机抽查、错题本和词根页共享该词库。
+window.dashboardVocabulary = vocabulary;
 let state = JSON.parse(localStorage.getItem(stateKey) || "{}");
 let currentDay = state.currentDay || "day3";
 let calendarDate = new Date(2026, 7, 19);
@@ -643,6 +645,8 @@ function showVocabularyView(view) {
 }
 
 function renderDay() {
+  // 若本地记录的学习日脚本尚未加载（例如 Day 4–9 的扩展数据），先安全显示已有学习日，避免首次刷新报错。
+  if (!days[currentDay]) currentDay = days.day3 ? "day3" : "day2";
   const day = days[currentDay];
   document.getElementById("day-title").textContent = day.title;
   const theme = document.getElementById("day-theme");

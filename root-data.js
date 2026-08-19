@@ -52,3 +52,18 @@ window.vocabularyRootFamilies = [
   {root:"duc",source:"拉丁语 ducere",meaning:"引导、带领",words:[{word:"reduce",parts:"re-（向后）+ duc（引导）",meaning:"减少"}]},
   {root:"vest",source:"拉丁语 vestire",meaning:"穿衣；后引申为赋予、投入",words:[{word:"investment",parts:"in-（进入）+ vest（投入）+ -ment（结果）",meaning:"投资"}]}
 ];
+
+// 供后续学习日追加词形记忆资料。常见后缀使用简化词源提示，其余以完整词形作为辅助记忆单元，避免过度拆词。
+window.appendVocabularyRootFamilies = function (entries) {
+  const familyWords = {};
+  entries.forEach(([, word, , meaning]) => {
+    const root = /tion$|sion$/.test(word) ? "-tion / -sion" : /ment$/.test(word) ? "-ment" : /ity$/.test(word) ? "-ity" : /able$|ible$/.test(word) ? "-able / -ible" : word;
+    (familyWords[root] ||= []).push({word, parts: root === word ? `完整词形 ${word}（作为辅助记忆单元）` : `${word} 含有 ${root} 这一常见词形结尾`, meaning});
+  });
+  Object.entries(familyWords).forEach(([root, words]) => {
+    const existing = window.vocabularyRootFamilies.find(family => family.root === root);
+    if (existing) { existing.words.push(...words); return; }
+    const source = root === "-tion / -sion" ? ["拉丁语 -tio / -sio", "行为、过程或结果"] : root === "-ment" ? ["拉丁语 -mentum", "行为、结果或状态"] : root === "-ity" ? ["拉丁语 -itas", "性质或状态"] : root === "-able / -ible" ? ["拉丁语 -abilis / -ibilis", "能够……的"] : ["词形记忆单元", "以完整词义和搭配建立记忆"];
+    window.vocabularyRootFamilies.push({root, source:source[0], meaning:source[1], words});
+  });
+};
