@@ -124,6 +124,7 @@ const days = {
 };
 
 const stateKey = "ielts-ece-dashboard-v1";
+const rememberedEmailKey = "ielts-ece-dashboard-email";
 const supabaseUrl = "https://zwpfnjrvplsbvclwpjpm.supabase.co";
 const supabasePublishableKey = "sb_publishable_1FSvh4_PAvprErj4RUHNRQ_vdoPa2EU";
 const supabaseClient = window.supabase?.createClient(supabaseUrl, supabasePublishableKey) || null;
@@ -189,12 +190,16 @@ function setSyncStatus(message, type = "") {
 function updateSyncInterface() {
   const emailInput = document.getElementById("sync-email");
   const passwordInput = document.getElementById("sync-password");
+  const rememberLogin = document.getElementById("remember-login").closest("label");
+  const passwordSaveNote = document.querySelector(".password-save-note");
   const submitButton = document.querySelector("#sync-form button[type='submit']");
   const registerButton = document.getElementById("sync-register");
   const logoutButton = document.getElementById("sync-logout");
   const isLoggedIn = Boolean(currentUser);
   emailInput.hidden = isLoggedIn;
   passwordInput.hidden = isLoggedIn;
+  rememberLogin.hidden = isLoggedIn;
+  passwordSaveNote.hidden = isLoggedIn;
   submitButton.hidden = isLoggedIn;
   registerButton.hidden = isLoggedIn;
   logoutButton.hidden = !isLoggedIn;
@@ -430,8 +435,11 @@ document.getElementById("sync-form").addEventListener("submit", async event => {
   if (!supabaseClient) return;
   const email = document.getElementById("sync-email").value.trim();
   const password = document.getElementById("sync-password").value;
+  const rememberLogin = document.getElementById("remember-login").checked;
   const submitButton = document.querySelector("#sync-form button[type='submit']");
   if (!email || password.length < 8) return;
+  if (rememberLogin) localStorage.setItem(rememberedEmailKey, email);
+  else localStorage.removeItem(rememberedEmailKey);
   submitButton.disabled = true;
   setSyncStatus("正在登录并读取云端学习记录…");
   const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
@@ -446,25 +454,31 @@ document.getElementById("sync-form").addEventListener("submit", async event => {
 document.getElementById("sync-register").addEventListener("click", async () => {
   if (!supabaseClient) return;
   const email = document.getElementById("sync-email").value.trim();
-  const password = document.getElementById("sync-password").value;
+  const passwordInput = document.getElementById("sync-password");
+  const password = passwordInput.value;
+  const rememberLogin = document.getElementById("remember-login").checked;
   const registerButton = document.getElementById("sync-register");
   if (!email || password.length < 8) {
     setSyncStatus("请填写有效邮箱，并设置至少 8 位的密码。", "error");
     return;
   }
   registerButton.disabled = true;
+  passwordInput.autocomplete = "new-password";
   setSyncStatus("正在创建同步账号…");
-  const { data, error } = await supabaseClient.auth.signUp({ email, password });
+  const { error } = await supabaseClient.auth.signUp({
+    email,
+    password,
+    options: { emailRedirectTo: `${window.location.origin}${window.location.pathname}` }
+  });
   registerButton.disabled = false;
+  passwordInput.autocomplete = "current-password";
   if (error) {
     setSyncStatus("注册失败：该邮箱可能已注册，或密码不符合要求。", "error");
     return;
   }
-  if (data.session) {
-    setSyncStatus("注册成功，正在同步你的学习记录…", "synced");
-    return;
-  }
-  setSyncStatus("账号已创建，请使用邮箱和密码登录。", "synced");
+  if (rememberLogin) localStorage.setItem(rememberedEmailKey, email);
+  else localStorage.removeItem(rememberedEmailKey);
+  setSyncStatus("验证邮件已发送。请完成一次邮箱验证，再使用邮箱和密码登录。", "synced");
 });
 
 document.getElementById("sync-logout").addEventListener("click", async () => {
@@ -479,4 +493,9 @@ document.getElementById("show-quiz-answer").addEventListener("click", revealQuiz
 
 renderDay();
 renderVocabulary();
+const rememberedEmail = localStorage.getItem(rememberedEmailKey);
+if (rememberedEmail) {
+  document.getElementById("sync-email").value = rememberedEmail;
+  document.getElementById("remember-login").checked = true;
+}
 initializeSync();
